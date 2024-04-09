@@ -1,5 +1,6 @@
 import praw
 import json
+import time
 from kafka import KafkaProducer
 
 from config import CLIENT_ID, CLIENT_SECRET, KAFKA_BOOTSTRAP_SERVER, INPUT_TOPIC
@@ -22,6 +23,7 @@ def send_to_kafka(subreddit="all"):
             print(f"Sent: {data}")
         except Exception as e:
             print(f"Error: {e}")
+    time.sleep(10)
 
 
 if __name__ == "__main__":
