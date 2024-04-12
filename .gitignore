@@ -256,7 +256,7 @@ dmypy.json
 cython_debug/
 
 # secrets
-secrets.cfg
+.env
 
 # spark streaming checkpoints
 ckpt/

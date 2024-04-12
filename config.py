@@ -1,17 +1,14 @@
-from configparser import ConfigParser
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-config = ConfigParser()
-configFilePath = 'secrets.cfg'
+load_dotenv(dotenv_path=Path('./.env'))
 
-with open(configFilePath) as f:
-    config.read_file(f)
-
-# praw configuration
-SUBREDDIT = config.get('reddit', 'subreddit')
-CLIENT_ID = config.get('reddit', 'client_id')
-CLIENT_SECRET = config.get('reddit', 'client_secret')
+# newsapi configuration
+CATEGORY = os.getenv("CATEGORY")
+API_KEY = os.getenv("API_KEY")
 
 # kafka configuration
-INPUT_TOPIC = config.get('kafka', 'input_topic')
-OUTPUT_TOPIC = config.get('kafka', 'output_topic')
-KAFKA_BOOTSTRAP_SERVER = config.get('kafka', 'bootstrap_servers')
+KAFKA_BOOTSTRAP_SERVER = os.getenv("KAFKA_BOOTSTRAP_SERVER")
+INPUT_TOPIC = os.getenv("INPUT_TOPIC")
+OUTPUT_TOPIC = os.getenv("OUTPUT_TOPIC")

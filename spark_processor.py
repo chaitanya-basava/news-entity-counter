@@ -1,19 +1,16 @@
 import spacy
+from collections import Counter
+
 import pyspark.sql.types as T
 import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
 
 from config import INPUT_TOPIC, OUTPUT_TOPIC, KAFKA_BOOTSTRAP_SERVER
 
-# Define schema of input json
-input_schema = T.StructType([
-    T.StructField("author", T.StringType(), True),
-    T.StructField("body", T.StringType(), True)
-])
 
 # Define the schema for named entities (text and count)
 udf_schema = T.ArrayType(T.StructType([
-    T.StructField("text", T.StringType(), True),
+    T.StructField("keyword", T.StringType(), True),
     T.StructField("count", T.IntegerType(), True)
 ]))
 
@@ -22,12 +19,9 @@ nlp = spacy.load("en_core_web_sm")
 
 
 def named_entity_recognition(text: str):
-    """Performs named entity recognition on the input text."""
     doc = nlp(text)
-    entities = {}
-    for ent in doc.ents:
-        entities[ent.text] = entities.get(ent.text, 0) + 1
-    return [(ent, count) for ent, count in entities.items()]
+    entity_counts = Counter(ent.text for ent in doc.ents)
+    return list(entity_counts.items())
 
 
 # Register the UDF
@@ -36,34 +30,31 @@ ner_udf = F.udf(named_entity_recognition, udf_schema)
 # Initialize Spark session with Kafka support
 spark = SparkSession.builder \
     .master("local[3]") \
-    .appName("NERWithKafka") \
+    .appName("NewsAPI_NER_counter") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("INFO")
 
-# Read from Kafka topic "topic1"
+# Read from the input Kafka topic
 df = (
     spark.readStream.format("kafka")
     .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVER)
     .option("subscribe", INPUT_TOPIC)
-    .option("startingOffsets", "earliest")
-    .option("maxOffsetsPerTrigger", 500)
     .load()
 )
 
+# perform NER
 df = (
     df
-    .select(F.from_json(F.col("value").cast("string"), input_schema).alias("data"))
-    .select("data.*")
-    .select(F.explode(ner_udf(F.col("body"))).alias("entity"))
+    .selectExpr('CAST(value AS STRING)')
+    .select(F.explode(ner_udf(F.col("value"))).alias("entity"))
     .select("entity.*")
-    .groupBy("text")
-    .agg(F.sum("count").alias("total_count"))
-    .select(F.to_json(F.struct("text", "total_count")).alias("value"))
+    .groupBy("keyword")
+    .agg(F.sum("count").alias("count"))
+    .select(F.to_json(F.struct("keyword", "count")).alias("value"))
 )
 
-# df.show(truncate=False)
-
+# Write to the output Kafka topic
 query = (
     df.writeStream.format("kafka")
     .outputMode("update")
