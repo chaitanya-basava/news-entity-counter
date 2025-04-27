@@ -260,3 +260,6 @@ cython_debug/
 
 # spark streaming checkpoints
 ckpt/
+
+.idea/
+*.impl

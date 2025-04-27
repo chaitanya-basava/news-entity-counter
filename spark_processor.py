@@ -54,6 +54,8 @@ df = (
     .select(F.to_json(F.struct("keyword", "count")).alias("value"))
 )
 
+# df.show(truncate=False)
+
 # Write to the output Kafka topic
 query = (
     df.writeStream.format("kafka")

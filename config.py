@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path('./.env'))
 
-# newsapi configuration
+# news api configuration
 CATEGORY = os.getenv("CATEGORY")
 API_KEY = os.getenv("API_KEY")
 
